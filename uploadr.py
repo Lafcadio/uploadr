@@ -161,13 +161,13 @@ if __name__ == "__main__":
     parser.add_argument("path", nargs="*", help = "Specific directories to sync",
                         default = [path for path in glob(os.path.join(ROOT, "*")) \
                                        if os.path.isdir(path) and not os.path.exists(os.path.join(path, ".private"))])
-    parser.add_argument("--action", dest="action", nargs=1, choices=["push", "pull", "sync"], default="push", help = "Push = upload (default), pull = download, sync = both")
+    parser.add_argument("--action", dest="action", nargs=1, choices=["push", "pull", "sync"], default=["push"], help = "Push = upload (default), pull = download, sync = both")
     parser.add_argument("--delete-missing", dest="delete", action="store_true", default=False, help = "Whether or not to delete when a file at the destination is not at the source")
     parser.add_argument("--preview", dest="really", action="store_false", default=True, help = "Only pretend to do actions")
     args = parser.parse_args()
     args.path = [path.rstrip('/') for path in args.path]
-
     action = args.action[0]
+
     if action == "sync" and args.delete:
         print "The --delete-missing option makes no sense for the `sync` action"
         sys.exit(0)
