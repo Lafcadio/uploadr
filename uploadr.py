@@ -11,11 +11,6 @@ SECRET = "d58873849eec23fa"
 ROOT   = "/data/Pictures/" # Default root to use
 TOKEN = ".uploadr_token"
 
-# Permissions (0 or 1)
-PUBLIC = 0
-FRIEND = 1
-FAMILY = 1
-
 class Uploadr(object):
     def __init__(self, key, secret, root):
         flickr.set_keys(key, secret)
@@ -60,10 +55,12 @@ class Uploadr(object):
                     return photoset, photographs
         return None, []
 
-    def upload(self, path, photoset):
-        picture = flickr.upload(photo_file = path, title = os.path.splitext(os.path.basename(path))[0], is_public = PUBLIC, is_friend = FRIEND, is_family = FAMILY)
+    def upload(self, path, photoset, public, friend, family):
+        picture = flickr.upload(photo_file=path, title=os.path.splitext(os.path.basename(path))[0],
+                                is_public=public, is_friend=friend, is_family=family)
         if photoset is None:
-            photoset = flickr.Photoset.create(title = os.path.basename(os.path.dirname(path)), primary_photo = picture)
+            photoset = flickr.Photoset.create(title = os.path.basename(os.path.dirname(path)),
+                                              primary_photo = picture)
         else:
             photoset.addPhoto(photo = picture)
         return picture, photoset
@@ -90,7 +87,7 @@ def get_photos(path):
     items.sort()
     return items
 
-def sync(path, uploadr, action, delete, really = False):
+def sync(path, uploadr, action, delete, public, family, friends, really = False):
     print path
     print "=" * len(path)
     photoset, remote = uploadr.load(os.path.basename(path))
@@ -123,7 +120,7 @@ def sync(path, uploadr, action, delete, really = False):
             if action in ["sync", "push"]:
                 print "Uploading", picture_path
                 if really:
-                    picture, photoset = uploadr.upload(picture_path, photoset)
+                    picture, photoset = uploadr.upload(picture_path, photoset, public, family, friends)
             elif delete:
                 print "Deleting", picture_path
                 if really:
@@ -161,9 +158,16 @@ if __name__ == "__main__":
     parser.add_argument("path", nargs="*", help = "Specific directories to sync",
                         default = [path for path in glob(os.path.join(ROOT, "*")) \
                                        if os.path.isdir(path) and not os.path.exists(os.path.join(path, ".private"))])
-    parser.add_argument("--action", dest="action", nargs=1, choices=["push", "pull", "sync"], default=["push"], help = "Push = upload (default), pull = download, sync = both")
-    parser.add_argument("--delete-missing", dest="delete", action="store_true", default=False, help = "Whether or not to delete when a file at the destination is not at the source")
+    parser.add_argument("--action", dest="action", nargs=1, choices=["push", "pull", "sync"],
+                        default=["push"],
+                        help = "Push = upload (default), pull = download, sync = both")
+    parser.add_argument("--delete-missing", dest="delete", action="store_true", default = False,
+                        help = "Whether or not to delete when a file at the destination is not at the source")
     parser.add_argument("--preview", dest="really", action="store_false", default=True, help = "Only pretend to do actions")
+    parser.add_argument("--public", dest="public", action="store_true", default=False, help = "Make images public")
+    parser.add_argument("--family", dest="family", action="store_true", default=False, help = "Make images visible to family")
+    parser.add_argument("--friends", dest="friends", action="store_true", default=False, help = "Make images visible to friends")
+
     args = parser.parse_args()
     args.path = [path.rstrip('/') for path in args.path]
     action = args.action[0]
@@ -179,7 +183,7 @@ if __name__ == "__main__":
 
     uploadr = Uploadr(KEY, SECRET, args.path[0])
     for path in args.path:
-        sync(path, uploadr, action, args.delete, args.really)
+        sync(path, uploadr, action, args.delete, args.public, args.family, args.friends, args.really)
         print ""
 
 
